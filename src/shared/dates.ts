@@ -19,6 +19,7 @@ export const longDay = (d: ISODate): string => LONG_DAYS[weekdayIndex(d)]
 export const shortDay = (d: ISODate): string => longDay(d).slice(0, 3)
 export const dayOfMonth = (d: ISODate): number => Number(d.slice(8))
 export const monthName = (month: number): string => MONTHS[month - 1]
+export const dayLabel = (d: ISODate): string => `${longDay(d)} ${dayOfMonth(d)} ${monthName(Number(d.slice(5, 7)))}`
 
 export function isoWeek(d: ISODate): number {
   const thursday = toUtc(addDays(d, 3 - weekdayIndex(d)))

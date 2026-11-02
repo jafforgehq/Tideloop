@@ -1,4 +1,4 @@
-import { addDays } from './dates'
+import { addDays, dayLabel, longDay, monthGrid } from './dates'
 import type { ISODate, PlannerData } from './types'
 
 /** Booked minutes on a day. Done todos count, so finishing work does not rewrite the shape of the day. */
@@ -30,3 +30,32 @@ export function weekSummary(data: PlannerData, monday: ISODate) {
     low: dates[loads.indexOf(Math.min(...loads))]
   }
 }
+
+export function formatMinutes(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (!h) return `${m}m`
+  return m ? `${h}h ${m}m` : `${h}h`
+}
+
+/** The one sentence under the week title. A day over the limit outranks high water. */
+export function weekFinding(data: PlannerData, monday: ISODate): string {
+  const { dates, loads, high, low } = weekSummary(data, monday)
+  if (!high) return 'Nothing booked yet. Drag a todo onto a day.'
+  const lowText = `Low water is ${longDay(low)} at ${formatMinutes(Math.min(...loads))}.`
+  const full = data.settings.fullDayHours * 60
+  const peak = Math.max(...loads)
+  if (peak > full) return `${longDay(dates[loads.indexOf(peak)])} is ${formatMinutes(peak - full)} over a full day. ${lowText}`
+  return `High tide is ${longDay(high)} at ${formatMinutes(peak)}. ${lowText}`
+}
+
+export function monthFinding(data: PlannerData, year: number, month: number): string {
+  const days = monthGrid(year, month).filter((c) => c.inMonth).map((c) => c.date)
+  const loads = days.map((d) => dayLoad(data, d))
+  const peak = Math.max(...loads)
+  if (peak === 0) return 'Nothing booked this month.'
+  return `Busiest day is ${dayLabel(days[loads.indexOf(peak)])} at ${formatMinutes(peak)}.`
+}
+
+export const overdueCount = (data: PlannerData, today: ISODate): number =>
+  data.todos.filter((t) => t.date !== null && t.date < today && !t.done).length

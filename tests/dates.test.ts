@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { addDays, isoWeek, isValidDate, longDay, monthGrid, startOfWeek, weekTitle } from '../src/shared/dates'
+import { addDays, dayLabel, isoWeek, isValidDate, longDay, monthGrid, startOfWeek, weekTitle } from '../src/shared/dates'
 
 describe('addDays', () => {
   it('crosses a month end', () => expect(addDays('2026-10-31', 1)).toBe('2026-11-01'))
@@ -44,4 +44,5 @@ describe('labels', () => {
   it('names a week inside one month', () => expect(weekTitle('2026-11-02')).toBe('Week 45, 2 to 8 November'))
   it('names a week across two months', () => expect(weekTitle('2026-11-30')).toBe('Week 49, 30 November to 6 December'))
   it('names a day', () => expect(longDay('2026-11-04')).toBe('Wednesday'))
+  it('gives a full day label', () => expect(dayLabel('2026-11-04')).toBe('Wednesday 4 November'))
 })

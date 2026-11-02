@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyData, reduce } from '../src/shared/planner'
-import { dayLoad, tidePath, weekSummary } from '../src/shared/tide'
+import { dayLoad, formatMinutes, monthFinding, overdueCount, tidePath, weekFinding, weekSummary } from '../src/shared/tide'
 
 const seeded = () => {
   let d = emptyData()
@@ -45,5 +45,37 @@ describe('weekSummary', () => {
   })
   it('has no high water in an empty week', () => {
     expect(weekSummary(emptyData(), '2026-11-02').high).toBeNull()
+  })
+})
+
+describe('formatMinutes', () => {
+  it.each([[0, '0m'], [45, '45m'], [60, '1h'], [135, '2h 15m']])('%i is %s', (m, text) => expect(formatMinutes(m)).toBe(text))
+})
+
+describe('weekFinding', () => {
+  it('invites a first move in an empty week', () => {
+    expect(weekFinding(emptyData(), '2026-11-02')).toBe('Nothing booked yet. Drag a todo onto a day.')
+  })
+  it('names high and low water', () => {
+    expect(weekFinding(seeded(), '2026-11-02')).toBe('High tide is Wednesday at 2h 15m. Low water is Monday at 0m.')
+  })
+  it('leads with a day over the full day limit', () => {
+    let d = seeded()
+    d = reduce(d, { type: 'todo/add', id: 'big', title: 'Big', date: '2026-11-05', minutes: 480 })
+    expect(weekFinding(d, '2026-11-02')).toBe('Thursday is 30m over a full day. Low water is Monday at 0m.')
+  })
+})
+
+describe('monthFinding', () => {
+  it('names the busiest day of the month', () => {
+    expect(monthFinding(seeded(), 2026, 11)).toBe('Busiest day is Wednesday 4 November at 2h 15m.')
+  })
+  it('says when a month is empty', () => expect(monthFinding(emptyData(), 2026, 11)).toBe('Nothing booked this month.'))
+})
+
+describe('overdueCount', () => {
+  it('counts unfinished todos on past days', () => {
+    expect(overdueCount(seeded(), '2026-11-05')).toBe(1)
+    expect(overdueCount(seeded(), '2026-11-04')).toBe(0)
   })
 })

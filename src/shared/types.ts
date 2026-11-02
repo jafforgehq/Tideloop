@@ -63,3 +63,22 @@ export type Action =
   | { type: 'list/update'; id: string; patch: Partial<Pick<List, 'name' | 'color'>> }
   | { type: 'list/delete'; id: string }
   | { type: 'settings/update'; patch: Partial<Settings> }
+
+export type UpdateStatus =
+  | { state: 'idle' }
+  | { state: 'unsupported' }
+  | { state: 'checking' }
+  | { state: 'current' }
+  | { state: 'available'; version: string }
+  | { state: 'downloading'; version: string; percent: number }
+  | { state: 'ready'; version: string }
+  | { state: 'error'; message: string }
+
+export interface McpInfo {
+  enabled: boolean
+  running: boolean
+  port: number
+  /** The `claude mcp add` command with its token masked. The real one is only ever copied by the main process. */
+  command: string | null
+  error: string | null
+}
