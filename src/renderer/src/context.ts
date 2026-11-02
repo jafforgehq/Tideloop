@@ -1,4 +1,5 @@
 import { createContext, useContext, type DragEvent } from 'react'
+import { dayLabel } from '../../shared/dates'
 import { parseQuickAdd } from '../../shared/quickAdd'
 import type { Action, ISODate, PlannerData } from '../../shared/types'
 
@@ -45,6 +46,9 @@ export async function addFromText(app: AppContext, text: string, defaultDate: IS
     parsed.kind === 'event'
       ? await app.dispatch({ type: 'event/add', id: newId(), title: parsed.title, date: date ?? app.today, start: parsed.start!, minutes: parsed.minutes })
       : await app.dispatch({ type: 'todo/add', id: newId(), title: parsed.title, date, listId: list?.id, minutes: parsed.minutes })
+  // From the New todo field an item can land outside the lists, so say where it went.
+  const placed = parsed.kind === 'event' ? (date ?? app.today) : date
+  if (error === null && defaultDate === null && placed) app.toast(`Added to ${dayLabel(placed)}`, { undo: true })
   return error === null
 }
 

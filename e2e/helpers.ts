@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
@@ -12,11 +12,15 @@ export const day = (i: number) => addDays(monday, i)
 
 export const tempDir = () => mkdtempSync(join(tmpdir(), 'tideloop-e2e-'))
 
+// Tests start past the tutorial, apart from the ones about it.
+const seen: Action = { type: 'settings/update', patch: { tutorialDone: true } }
+
 export const seed = (dir: string, actions: Action[], base: PlannerData = emptyData()) => {
-  writeFileSync(join(dir, 'planner.json'), JSON.stringify(actions.reduce(reduce, base)))
+  writeFileSync(join(dir, 'planner.json'), JSON.stringify([seen, ...actions].reduce(reduce, base)))
 }
 
-export async function launch(dir: string): Promise<{ app: ElectronApplication; page: Page }> {
+export async function launch(dir: string, options: { firstRun?: boolean } = {}): Promise<{ app: ElectronApplication; page: Page }> {
+  if (!options.firstRun && !existsSync(join(dir, 'planner.json'))) seed(dir, [])
   const app = await electron.launch({
     // TIDELOOP_APP runs the suite against a packaged build instead of the source tree.
     executablePath: process.env.TIDELOOP_APP,

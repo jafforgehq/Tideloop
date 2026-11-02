@@ -14,7 +14,8 @@ export const DEFAULT_SETTINGS: Settings = {
   fixedTheme: 'tide',
   fullDayHours: 8,
   autoUpdate: true,
-  mcpEnabled: false
+  mcpEnabled: false,
+  tutorialDone: false
 }
 
 export const emptyData = (): PlannerData => ({
@@ -218,5 +219,7 @@ export function normalize(raw: unknown): PlannerData {
       }
     }
   }
+  // A file from before the tutorial existed: only someone with nothing planned yet is new here.
+  if (!isObject(raw.settings) || raw.settings.tutorialDone === undefined) settings.tutorialDone = checkedTodos.length + checkedEvents.length > 0
   return { version: 1, lists: checkedLists, todos: checkedTodos, events: checkedEvents, settings }
 }

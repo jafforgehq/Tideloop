@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.2
+
+- An interactive tutorial on first run, using your own first todo. You can replay it from Settings.
+- New todo now tells you when something went on the calendar instead of a list, and offers Undo.
+
 ## 0.0.1
 
 First release.
