@@ -1,27 +1,49 @@
 #!/usr/bin/env bash
-# Stores the release secrets in GitHub. Run it yourself in a terminal: values are read
-# from hidden prompts and go straight to GitHub, so they never touch the repo or a log.
+# Stores every release secret in GitHub. Run it yourself in a terminal: values are read from
+# hidden prompts and go straight to GitHub, so they never touch the repo or a log.
 set -euo pipefail
+umask 077
 
 REPO=jafforgehq/Tideloop
+IDENTITY='Developer ID Application: Feda Hadziselimovic (R9QFVTDHY5)'
+HERE=$(cd "$(dirname "$0")" && pwd)
+# Apple's LibreSSL writes a .p12 that `security import` can read on the CI runner. Newer OpenSSL defaults may not.
+OPENSSL=/usr/bin/openssl
 
-secret() {
-  local value
-  read -r -s -p "$2: " value
-  echo
-  [ -n "$value" ] || { echo "$1 cannot be empty" >&2; exit 1; }
-  printf %s "$value" | gh secret set "$1" --repo "$REPO"
-}
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+export EXPORT_PASS P12_PASS
+EXPORT_PASS=$($OPENSSL rand -hex 24)
+P12_PASS=$($OPENSSL rand -hex 24)
 
-read -r -p "Path to your exported Developer ID .p12 file: " p12
-p12=${p12/#\~/$HOME}
-[ -f "$p12" ] || { echo "No file at $p12" >&2; exit 1; }
-base64 -i "$p12" | gh secret set CSC_LINK --repo "$REPO"
+echo "1 of 3: signing certificate"
+echo "A Keychain dialog will appear. Enter your Mac login password and allow it."
+security export -k "$HOME/Library/Keychains/login.keychain-db" -t identities -f pkcs12 -P "$EXPORT_PASS" -o "$work/all.p12"
+$OPENSSL pkcs12 -in "$work/all.p12" -passin env:EXPORT_PASS -nodes -out "$work/all.pem" 2>/dev/null
+python3 "$HERE/pick-identity.py" "$work/all.pem" "$IDENTITY" "$work/cert.pem" "$work/key.pem"
+$OPENSSL pkcs12 -export -inkey "$work/key.pem" -in "$work/cert.pem" -name "$IDENTITY" -passout env:P12_PASS -out "$work/release.p12"
+base64 -i "$work/release.p12" | gh secret set CSC_LINK --repo "$REPO"
+printf %s "$P12_PASS" | gh secret set CSC_KEY_PASSWORD --repo "$REPO"
 
-secret CSC_KEY_PASSWORD "Password you set when exporting the .p12"
-secret APPLE_ID "Apple ID email"
-secret APPLE_APP_SPECIFIC_PASSWORD "App-specific password from account.apple.com"
-secret RELEASES_TOKEN "Fine-grained GitHub token with Contents: write on tideloop-app"
+echo
+echo "2 of 3: Apple notarization"
+echo "Opening Apple's site. Sign in, open App-Specific Passwords, and create one named Tideloop."
+open "https://account.apple.com/account/manage"
+read -r -p "Apple ID email: " apple_id
+printf %s "$apple_id" | gh secret set APPLE_ID --repo "$REPO"
+read -r -s -p "App-specific password (hidden): " apple_password
+echo
+printf %s "$apple_password" | gh secret set APPLE_APP_SPECIFIC_PASSWORD --repo "$REPO"
 
-echo "Done. You can delete the .p12 file now."
+echo
+echo "3 of 3: GitHub release token"
+echo "Opening GitHub. Under Repository access pick Only select repositories, then tideloop-app."
+echo "Under Repository permissions set Contents to Read and write. Generate it and copy it."
+open "https://github.com/settings/personal-access-tokens/new?name=Tideloop%20releases&description=Publish%20Tideloop%20releases%20and%20page&contents=write"
+read -r -s -p "Token (hidden): " token
+echo
+printf %s "$token" | gh secret set RELEASES_TOKEN --repo "$REPO"
+
+echo
 gh secret list --repo "$REPO"
+echo "All done. Tell Claude, or re-run the failed workflow with: gh run rerun --failed \$(gh run list --repo $REPO --branch main --limit 1 --json databaseId --jq '.[0].databaseId') --repo $REPO"
