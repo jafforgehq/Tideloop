@@ -50,7 +50,7 @@ function renderHero(): void {
 
   const tray = data.todos.filter((t) => t.date === null)
   $('tray').innerHTML = tray.length
-    ? tray.map((t) => `<button type="button" class="chip" draggable="true" data-todo="${t.id}" aria-pressed="${picked === t.id}">${escapeHtml(t.title)} <span>${formatMinutes(t.minutes)}</span></button>`).join('')
+    ? tray.map((t) => `<div class="chip" draggable="true" data-todo="${t.id}"><button type="button" aria-pressed="${picked === t.id}">${escapeHtml(t.title)} <span>${formatMinutes(t.minutes)}</span></button></div>`).join('')
     : '<span class="tray-empty">All scheduled. Watch the water.</span>'
 
   $('heads').innerHTML = dates.map((date, i) => `
@@ -63,7 +63,7 @@ function renderHero(): void {
     const todos = data.todos.filter((t) => t.date === date).sort((a, b) => a.order - b.order)
     return `<div class="day" data-day="${date}" data-today="${date === TODAY}">
       ${events.map((e) => `<div class="event"><small>${e.start}</small>${escapeHtml(e.title)}</div>`).join('')}
-      ${todos.map((t) => `<button type="button" class="card" draggable="true" data-todo="${t.id}" aria-pressed="${picked === t.id}">${escapeHtml(t.title)}</button>`).join('')}
+      ${todos.map((t) => `<div class="card" draggable="true" data-todo="${t.id}"><button type="button" aria-pressed="${picked === t.id}">${escapeHtml(t.title)}</button></div>`).join('')}
     </div>`
   }).join('')
 }
