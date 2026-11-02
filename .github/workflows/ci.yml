@@ -49,6 +49,7 @@ jobs:
     outputs:
       version: ${{ steps.check.outputs.version }}
       release: ${{ steps.check.outputs.release }}
+      publish: ${{ steps.token.outputs.publish }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: check
@@ -72,27 +73,29 @@ jobs:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
           missing=""
-          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_APP_SPECIFIC_PASSWORD RELEASES_TOKEN; do
+          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_APP_SPECIFIC_PASSWORD; do
             [ -n "${!name}" ] || missing="$missing $name"
           done
           if [ -n "$missing" ]; then
             echo "::error::Missing secrets:$missing. Run scripts/setup-ci-secrets.sh, then re-run this workflow."
             exit 1
           fi
-      # Also here on Linux: a token that cannot publish should fail now, not after a 10 minute macOS build.
+      # A token that cannot publish should not waste the build. The run still signs and notarizes, and keeps the files.
       - name: Check the release token can publish
+        id: token
         if: steps.check.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
-          id=$(gh api -X POST "repos/$PUBLIC_REPO/releases" -f tag_name=token-check -f name="Token check" -F draft=true --jq .id) || {
-            echo "::error::RELEASES_TOKEN cannot create releases on $PUBLIC_REPO. It needs Contents: Read and write on that repo. Run scripts/setup-ci-secrets.sh token."
-            exit 1
-          }
-          gh api -X DELETE "repos/$PUBLIC_REPO/releases/$id"
+          if id=$(gh api -X POST "repos/$PUBLIC_REPO/releases" -f tag_name=token-check -f name="Token check" -F draft=true --jq .id 2>/dev/null); then
+            gh api -X DELETE "repos/$PUBLIC_REPO/releases/$id"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::RELEASES_TOKEN cannot create releases on $PUBLIC_REPO, so this run builds and notarizes without publishing. Fix it with scripts/setup-ci-secrets.sh token."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
 
   release:
     needs: version
@@ -129,7 +132,20 @@ jobs:
           done
       - name: Refuse anything that is not properly signed and notarized
         run: scripts/verify-release.sh dist/mac/Tideloop.app dist/mac-arm64/Tideloop.app dist/Tideloop-x64.dmg dist/Tideloop-arm64.dmg
+      # Saved before publishing, so a notarized build is never lost to a publishing problem.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tideloop-${{ env.VERSION }}
+          path: |
+            dist/Tideloop-*.zip
+            dist/Tideloop-*.zip.blockmap
+            dist/Tideloop-*.dmg
+            dist/latest-mac.yml
+            notes.md
+          compression-level: 0
+          retention-days: 14
       - name: Publish
+        if: needs.version.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         # Stapling changes the disk images, but the updater only reads the zip entries in latest-mac.yml.
@@ -141,6 +157,7 @@ jobs:
             --repo "$PUBLIC_REPO" --title "Tideloop $VERSION" --notes-file notes.md --draft
           gh release edit "v$VERSION" --repo "$PUBLIC_REPO" --draft=false
       - name: Tag the source
+        if: needs.version.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api "repos/$GITHUB_REPOSITORY/git/refs" -f "ref=refs/tags/v$VERSION" -f "sha=$GITHUB_SHA"
@@ -148,7 +165,7 @@ jobs:
   page:
     # Runs after a successful release, and on pushes that needed no release, so page edits go live too.
     needs: [version, release]
-    if: ${{ always() && needs.version.result == 'success' && (needs.release.result == 'success' || needs.release.result == 'skipped') }}
+    if: ${{ always() && needs.version.result == 'success' && (needs.release.result == 'success' || needs.release.result == 'skipped') && (needs.version.outputs.release != 'true' || needs.version.outputs.publish == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
