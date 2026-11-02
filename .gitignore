@@ -1,0 +1,12 @@
+node_modules/
+out/
+dist/
+.DS_Store
+*.log
+test-results/
+playwright-report/
+.superpowers/
+.taste-skill/
+*.p12
+*.p8
+.env*
