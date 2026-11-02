@@ -1,0 +1,36 @@
+appId: com.jafforgehq.tideloop
+productName: Tideloop
+copyright: Copyright © 2026 Feda Hadziselimovic
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**
+  - package.json
+extraResources:
+  - { from: node_modules/@fontsource-variable/familjen-grotesk/LICENSE, to: licenses/familjen-grotesk.txt }
+  - { from: node_modules/@fontsource-variable/archivo/LICENSE, to: licenses/archivo.txt }
+  - { from: node_modules/@fontsource-variable/jetbrains-mono/LICENSE, to: licenses/jetbrains-mono.txt }
+  - { from: node_modules/@fontsource/ibm-plex-sans/LICENSE, to: licenses/ibm-plex-sans.txt }
+mac:
+  category: public.app-category.productivity
+  icon: build/icon.png
+  target: [dmg, zip]
+  hardenedRuntime: true
+  notarize: true
+  artifactName: Tideloop-${version}-${arch}.${ext}
+dmg:
+  # No version in the name, so the public page can link to the latest release permanently.
+  artifactName: Tideloop-${arch}.dmg
+  sign: true
+electronFuses:
+  runAsNode: false
+  enableNodeCliInspectArguments: false
+  enableNodeOptionsEnvironmentVariable: false
+  onlyLoadAppFromAsar: true
+  enableEmbeddedAsarIntegrityValidation: true
+publish:
+  provider: github
+  owner: jafforgehq
+  repo: tideloop-app
+  releaseType: release

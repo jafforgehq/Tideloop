@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tideloop, a week planner for macOS with a tide chart</title>
+  <meta name="description" content="Tideloop is a week planner for macOS. A tide over your days rises as you plan, so an overloaded Thursday shows before it happens.">
+  <meta property="og:title" content="Tideloop">
+  <meta property="og:description" content="A week planner for macOS. A tide over your days rises as you plan.">
+  <meta property="og:image" content="https://jafforgehq.github.io/tideloop-app/shots/week-tide.jpg">
+  <link rel="icon" type="image/png" href="./icon.png">
+  <script type="module" src="./main.ts"></script>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <clipPath id="stage-cut" clipPathUnits="objectBoundingBox">
+      <path d="M0,.12 C.07,.12 .1,.035 .19,.035 C.28,.035 .3,.07 .4,.07 C.5,.07 .52,0 .64,0 L1,0 L1,1 L0,1 Z"/>
+    </clipPath>
+  </svg>
+
+  <header class="bar">
+    <a class="wordmark" href="#top">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M2 13c3-6 6-6 10 0s7 6 10 0"/></svg>
+      Tideloop
+    </a>
+    <nav aria-label="Page">
+      <a href="#calendar">Calendar</a>
+      <a href="#keys">Keys</a>
+      <a href="#claude">Claude Code</a>
+      <a href="#themes">Themes</a>
+      <a href="#questions">Questions</a>
+    </nav>
+    <!-- if-released -->
+    <a class="button small" href="https://github.com/jafforgehq/tideloop-app/releases/latest/download/Tideloop-arm64.dmg">Download</a>
+    <!-- /if-released -->
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <h1>See how full<br>your week is</h1>
+        <p class="lead">Tideloop is a week planner for macOS. A tide over your days rises as you plan, so an overloaded Thursday shows before it happens.</p>
+        <!-- if-released -->
+        <div class="actions">
+          <a class="button" href="https://github.com/jafforgehq/tideloop-app/releases/latest/download/Tideloop-arm64.dmg">Download for Mac</a>
+          <a class="plain" href="https://github.com/jafforgehq/tideloop-app/releases/latest/download/Tideloop-x64.dmg">Intel Mac</a>
+        </div>
+        <p class="fine">Version __VERSION__. Signed and notarized. Needs macOS 13 or later.</p>
+        <!-- /if-released -->
+        <!-- if-unreleased -->
+        <p class="soon">The first signed build is on its way. This page will offer the download as soon as Apple has notarized it.</p>
+        <!-- /if-unreleased -->
+      </div>
+      <div class="stage">
+        <div class="fragment" data-ui id="tide-fragment">
+          <div class="tray" id="tray"></div>
+          <p class="fragment-note" id="finding" aria-live="polite"></p>
+          <div class="seven" id="heads"></div>
+          <svg class="tide" viewBox="0 0 700 120" preserveAspectRatio="none" aria-hidden="true">
+            <path class="swell" id="swell"/>
+            <path class="water" id="water"/>
+          </svg>
+          <div class="seven" id="days"></div>
+        </div>
+        <noscript><img src="./shots/week-tide.jpg" alt="The Tideloop week view with a tide chart above seven days" width="1600" height="886"></noscript>
+      </div>
+    </section>
+
+    <section class="split" id="calendar">
+      <div class="split-copy reveal">
+        <h2>Then look further out</h2>
+        <p>The month view keeps the same water. Each day fills from the bottom as it books up, so you can find a quiet stretch at a glance, and any todo can be dropped straight onto a date.</p>
+      </div>
+      <div class="split-picture shutter">
+        <img src="./shots/month-tide.jpg" alt="Tideloop month view for November, with days filled from the bottom according to how booked they are" width="1600" height="886" loading="lazy">
+      </div>
+    </section>
+
+    <section class="typed" id="typing">
+      <h2 class="reveal">Write it the way you think it</h2>
+      <div data-ui class="typed-line reveal">
+        <label class="sr-only" for="typed">Try quick add</label>
+        <input id="typed" value="Dentist fri 14:30 45m" spellcheck="false" autocomplete="off">
+      </div>
+      <dl class="answer reveal" id="answer" data-ui aria-live="polite"></dl>
+      <div class="examples reveal" id="examples">
+        <button type="button">Report fri 1h</button>
+        <button type="button">Buy milk #home</button>
+        <button type="button">Call 2pm tomorrow</button>
+      </div>
+    </section>
+
+    <section class="commands" id="keys">
+      <h2 class="reveal">Every move has a key</h2>
+      <div data-ui class="command-box reveal">
+        <label class="sr-only" for="command-search">Find a command</label>
+        <input id="command-search" placeholder="Find a command" autocomplete="off">
+        <ul id="command-list"></ul>
+      </div>
+    </section>
+
+    <section class="split reverse" id="claude">
+      <div class="split-copy reveal">
+        <h2>Plan out loud with Claude Code</h2>
+        <p>Turn it on in Settings and Claude Code can read your week, add todos and move things around. Edits appear in the window as they happen, and Cmd+Z takes back anything you did not want.</p>
+        <p>The server listens on your Mac only, only while Tideloop is open, and only for the private token the app gives you. It stays off until you switch it on.</p>
+      </div>
+      <div class="terminal reveal" data-ui>
+        <pre><code><span class="prompt">$</span> claude mcp add --transport http --scope user tideloop \
+    http://127.0.0.1:47613/mcp \
+    --header "Authorization: Bearer ••••••••"
+
+<span class="you">&gt; What does Thursday look like? Move the tax form to Friday if it is too full.</span>
+
+<span class="tool">get_week</span>     Thursday holds 3h 30m of 8h.
+<span class="tool">update_todo</span>  Submit tax form moved to Friday.
+
+Thursday is down to 2h 30m. Friday now holds 2h 45m.</code></pre>
+      </div>
+    </section>
+
+    <section class="themes" id="themes">
+      <h2 class="reveal">Six ways to read the water</h2>
+      <div class="tiles" id="tiles"></div>
+    </section>
+
+    <section class="faq" id="questions">
+      <div class="faq-list">
+        <h2>Fair questions</h2>
+        <ul id="faq-list"></ul>
+      </div>
+      <p class="faq-answer" id="faq-answer" aria-live="polite"></p>
+    </section>
+
+    <section class="closing">
+      <div class="closing-copy reveal">
+        <h2>Check the tide before you book Thursday</h2>
+        <!-- if-released -->
+        <a class="button light" href="https://github.com/jafforgehq/tideloop-app/releases/latest/download/Tideloop-arm64.dmg">Download for Mac</a>
+        <!-- /if-released -->
+        <!-- if-unreleased -->
+        <p>The first signed build is on its way.</p>
+        <!-- /if-unreleased -->
+      </div>
+      <div class="closing-picture reveal">
+        <img src="./shots/week-deep-water.jpg" alt="The Tideloop week view in the Deep Water theme" width="1600" height="886" loading="lazy">
+      </div>
+    </section>
+  </main>
+
+  <footer class="board">
+    <div class="tile statement">
+      <p>A week planner for macOS, made by Feda Hadziselimovic.</p>
+      <p class="fine">Copyright 2026. Interface fonts are open source, and their licences ship inside the app.</p>
+    </div>
+    <nav class="tile" aria-label="Footer">
+      <a href="#calendar">Calendar</a>
+      <a href="#keys">Keys</a>
+      <a href="#claude">Claude Code</a>
+      <a href="#themes">Themes</a>
+      <a href="#questions">Questions</a>
+    </nav>
+    <div class="tile">
+      <p>Your data is one file on your Mac.</p>
+    </div>
+    <a class="tile releases" href="https://github.com/jafforgehq/tideloop-app/releases">All releases</a>
+    <div class="tile wordmark-tile" aria-hidden="true">Tideloop</div>
+    <!-- if-released -->
+    <a class="tile accent-tile" href="https://github.com/jafforgehq/tideloop-app/releases/latest/download/Tideloop-arm64.dmg">
+      <span>Download for Mac</span>
+      <svg width="56" height="56" viewBox="0 0 56 56" fill="none" stroke="currentColor" stroke-width="4" aria-hidden="true"><path d="M8 28h38M30 12l16 16-16 16"/></svg>
+    </a>
+    <!-- /if-released -->
+    <!-- if-unreleased -->
+    <a class="tile accent-tile" href="https://github.com/jafforgehq/tideloop-app/releases">
+      <span>Watch for the first build</span>
+      <svg width="56" height="56" viewBox="0 0 56 56" fill="none" stroke="currentColor" stroke-width="4" aria-hidden="true"><path d="M8 28h38M30 12l16 16-16 16"/></svg>
+    </a>
+    <!-- /if-unreleased -->
+  </footer>
+</body>
+</html>
