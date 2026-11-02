@@ -19,6 +19,19 @@ read_secret() {
   done
 }
 
+# Reads an email into REPLY. Asks again until it looks like one, so Enter alone cannot store a blank Apple ID.
+read_apple_id() {
+  REPLY=""
+  until [[ "$REPLY" == *@*.* ]]; do
+    read -r -p "Apple ID email: " REPLY
+  done
+}
+
+store_apple_id() {
+  read_apple_id
+  printf %s "$REPLY" | gh secret set APPLE_ID --repo "$REPO"
+}
+
 store_token() {
   echo "GitHub release token"
   echo "Opening GitHub. Under Repository access pick Only select repositories, then tideloop-app."
@@ -32,11 +45,17 @@ store_token() {
   printf %s "$REPLY" | gh secret set RELEASES_TOKEN --repo "$REPO"
 }
 
-# Usage: setup-ci-secrets.sh        sets everything
-#        setup-ci-secrets.sh token  replaces only the GitHub token
+# Usage: setup-ci-secrets.sh           sets everything
+#        setup-ci-secrets.sh token     replaces only the GitHub token
+#        setup-ci-secrets.sh apple-id  replaces only the Apple ID
 if [ "${1:-}" = "token" ]; then
   store_token
   echo "Token stored."
+  exit 0
+fi
+if [ "${1:-}" = "apple-id" ]; then
+  store_apple_id
+  echo "Apple ID stored."
   exit 0
 fi
 
@@ -59,8 +78,7 @@ echo
 echo "2 of 3: Apple notarization"
 echo "Opening Apple's site. Sign in, open App-Specific Passwords, and create one named Tideloop."
 open "https://account.apple.com/account/manage"
-read -r -p "Apple ID email: " apple_id
-printf %s "$apple_id" | gh secret set APPLE_ID --repo "$REPO"
+store_apple_id
 read_secret "App-specific password (hidden)"
 printf %s "$REPLY" | gh secret set APPLE_APP_SPECIFIC_PASSWORD --repo "$REPO"
 
