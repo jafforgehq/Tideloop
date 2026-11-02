@@ -6,7 +6,7 @@ set -euo pipefail
 PUBLIC_REPO=jafforgehq/tideloop-app
 message=${1:?commit message required}
 
-version=$(gh api "repos/$PUBLIC_REPO/releases/latest" --jq .tag_name 2>/dev/null || true)
+version=$(gh release view --repo "$PUBLIC_REPO" --json tagName --jq .tagName 2>/dev/null || true)
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
@@ -24,4 +24,4 @@ if git diff --cached --quiet; then
 fi
 git -c user.name="Tideloop release" -c user.email="noreply@users.noreply.github.com" commit -q -m "$message"
 git push -q origin HEAD:main
-echo "Page published for version ${version:-none}."
+echo "Page published for release ${version:-none yet}."
