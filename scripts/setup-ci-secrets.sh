@@ -19,16 +19,24 @@ read_secret() {
   done
 }
 
+# Proves the token in REPLY can publish, by creating a draft release and deleting it. Drafts are never public.
+token_can_release() {
+  local id
+  id=$(GH_TOKEN="$REPLY" gh api -X POST repos/jafforgehq/tideloop-app/releases -f tag_name=token-check -f name="Token check" -F draft=true --jq .id 2>/dev/null) || return 1
+  GH_TOKEN="$REPLY" gh api -X DELETE "repos/jafforgehq/tideloop-app/releases/$id" >/dev/null 2>&1
+}
+
 store_token() {
   echo "GitHub release token"
   echo "Opening GitHub. Under Repository access pick Only select repositories, then tideloop-app."
-  echo "Under Repository permissions set Contents to Read and write. Generate it and copy it."
+  echo "Set Resource owner to jafforgehq. Under Repository permissions set Contents to Read and write. Generate it and copy it."
   open "https://github.com/settings/personal-access-tokens/new?name=Tideloop%20releases&description=Publish%20Tideloop%20releases%20and%20page&contents=write"
   read_secret "Token (hidden)"
-  until GH_TOKEN="$REPLY" gh api repos/jafforgehq/tideloop-app --jq .full_name >/dev/null 2>&1; do
-    echo "GitHub did not accept that token. Try again."
+  until token_can_release; do
+    echo "That token cannot create releases on tideloop-app. It needs Contents: Read and write on that repo. Fix it and paste it again."
     read_secret "Token (hidden)"
   done
+  echo "Token works: it can publish to tideloop-app."
   printf %s "$REPLY" | gh secret set RELEASES_TOKEN --repo "$REPO"
 }
 
