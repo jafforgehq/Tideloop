@@ -19,6 +19,7 @@ concurrency:
 env:
   PUBLIC_REPO: jafforgehq/tideloop-app
   APPLE_TEAM_ID: R9QFVTDHY5
+  APPLE_ID: fedja.hadziselimovic@gmail.com
 
 jobs:
   test:
@@ -70,12 +71,11 @@ jobs:
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
           missing=""
-          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD RELEASES_TOKEN; do
+          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_APP_SPECIFIC_PASSWORD RELEASES_TOKEN; do
             [ -n "${!name}" ] || missing="$missing $name"
           done
           if [ -n "$missing" ]; then
@@ -106,12 +106,10 @@ jobs:
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: npm run dist
       - name: Notarize and staple the disk images
         env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
         run: |
           for dmg in dist/Tideloop-*.dmg; do

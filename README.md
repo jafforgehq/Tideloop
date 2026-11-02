@@ -34,8 +34,7 @@ Secrets are set once with `scripts/setup-ci-secrets.sh`:
 | --- | --- |
 | `CSC_LINK` | The Developer ID Application certificate as a base64 `.p12` |
 | `CSC_KEY_PASSWORD` | The password of that `.p12` |
-| `APPLE_ID` | The Apple ID used for notarization |
-| `APPLE_APP_SPECIFIC_PASSWORD` | An app-specific password for that Apple ID |
+| `APPLE_APP_SPECIFIC_PASSWORD` | An app-specific password for the Apple ID set in `ci.yml` |
 | `RELEASES_TOKEN` | A fine-grained GitHub token with Contents: write on `tideloop-app` only |
 
 ## Claude Code
