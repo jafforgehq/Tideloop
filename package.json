@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "build:page": "vite build --config vite.page.config.mts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "electron-vite build && playwright test",

@@ -10,7 +10,8 @@ version=$(gh api "repos/$PUBLIC_REPO/releases/latest" --jq .tag_name 2>/dev/null
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
-gh auth setup-git
+# CI has no git credentials of its own. A local run already does, so leave its git config alone.
+if [ -n "${CI:-}" ]; then gh auth setup-git; fi
 gh repo clone "$PUBLIC_REPO" "$work" -- --depth 1 --quiet
 rsync -a --delete --exclude .git site/ "$work/"
 node scripts/stamp-page.mjs "$work/index.html" "${version#v}"
