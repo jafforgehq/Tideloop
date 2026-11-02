@@ -22,6 +22,7 @@ mac:
 dmg:
   # No version in the name, so the public page can link to the latest release permanently.
   artifactName: Tideloop-${arch}.dmg
+  sign: true
 electronFuses:
   runAsNode: false
   enableNodeCliInspectArguments: false
