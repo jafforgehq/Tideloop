@@ -24,7 +24,8 @@ export function wireUpdater(updater: UpdaterLike, options: { send: (status: Upda
     if (asked) {
       const first = String((error as Error)?.message ?? error).split('\n')[0].slice(0, 160)
       set({ state: 'error', message: `Could not check for updates: ${first}` })
-    } else if (status.state !== 'idle') {
+    } else if (status.state !== 'idle' && status.state !== 'error') {
+      // electron-updater emits an error and also rejects, so the same failure can arrive here twice.
       set({ state: 'idle' })
     }
     asked = false
@@ -53,6 +54,7 @@ export function wireUpdater(updater: UpdaterLike, options: { send: (status: Upda
       updater.autoDownload = options.autoDownload()
       asked = manual
       if (manual) set({ state: 'checking' })
+      else if (status.state === 'error') set({ state: 'idle' })
       try {
         await updater.checkForUpdates()
       } catch (error) {

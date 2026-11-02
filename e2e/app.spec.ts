@@ -60,6 +60,41 @@ test('a drop between two cards lands between them', async () => {
   await app.close()
 })
 
+test('a drop in a list lands where the line shows, with done todos in the list', async () => {
+  const dir = tempDir()
+  seed(dir, [
+    { type: 'todo/add', id: 'a', title: 'Alpha' },
+    { type: 'todo/add', id: 'b', title: 'Bravo' },
+    { type: 'todo/toggle', id: 'b' },
+    { type: 'todo/add', id: 'c', title: 'Charlie' },
+    { type: 'todo/add', id: 'd', title: 'Delta' },
+    { type: 'todo/add', id: 'x', title: 'Xray', date: day(1) }
+  ])
+  const { app, page } = await launch(dir)
+  await page.locator('[data-todo-id="x"]').dragTo(page.locator('[data-todo-id="d"]'), { targetPosition: { x: 10, y: 2 } })
+  const open = page.getByRole('region', { name: 'Work list' }).locator('[data-todo-id][data-done="false"]')
+  await expect(open).toHaveText([/Alpha/, /Charlie/, /Xray/, /Delta/])
+  await app.close()
+})
+
+test('keyboard reordering in a list skips done todos', async () => {
+  const dir = tempDir()
+  seed(dir, [
+    { type: 'todo/add', id: 'a', title: 'Alpha' },
+    { type: 'todo/add', id: 'b', title: 'Bravo' },
+    { type: 'todo/toggle', id: 'b' },
+    { type: 'todo/add', id: 'c', title: 'Charlie' },
+    { type: 'todo/add', id: 'd', title: 'Delta' }
+  ])
+  const { app, page } = await launch(dir)
+  await page.locator('[data-todo-id="a"]').focus()
+  await page.keyboard.press('Alt+ArrowDown')
+  const open = page.getByRole('region', { name: 'Work list' }).locator('[data-todo-id][data-done="false"]')
+  await expect(open).toHaveText([/Charlie/, /Alpha/, /Delta/])
+  await expect(page.locator('[data-todo-id="a"]')).toBeFocused()
+  await app.close()
+})
+
 test('the keyboard can move, finish and open a todo', async () => {
   const dir = tempDir()
   seed(dir, [{ type: 'todo/add', id: 'a', title: 'Task A', date: day(1) }])

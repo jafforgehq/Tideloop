@@ -64,6 +64,24 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "release=$release" >> "$GITHUB_OUTPUT"
           echo "Version $version, release needed: $release"
+      # Here rather than in the release job, so missing secrets never burn macOS minutes.
+      - name: Require signing secrets
+        if: steps.check.outputs.release == 'true'
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          missing=""
+          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD RELEASES_TOKEN; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing secrets:$missing. Run scripts/setup-ci-secrets.sh, then re-run this workflow."
+            exit 1
+          fi
 
   release:
     needs: version
@@ -80,22 +98,14 @@ jobs:
       APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
       RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
     steps:
-      - name: Require signing secrets
-        run: |
-          missing=""
-          for name in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD RELEASES_TOKEN; do
-            [ -n "${!name}" ] || missing="$missing $name"
-          done
-          if [ -n "$missing" ]; then
-            echo "::error::Missing secrets:$missing. Run scripts/setup-ci-secrets.sh, then re-run this job."
-            exit 1
-          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Check the release notes before spending time on a build
+        run: node scripts/release-notes.mjs "$VERSION" > notes.md
       - name: Build, sign and notarize the apps
         run: npm run dist
       - name: Notarize and staple the disk images
@@ -110,10 +120,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         # Stapling changes the disk images, but the updater only reads the zip entries in latest-mac.yml.
+        # Uploaded as a draft and published last, so nobody sees a half-uploaded release and a failure can retry.
+        # The version job found no published release with this tag, so anything deleted here is a stale draft.
         run: |
-          node scripts/release-notes.mjs "$VERSION" > notes.md
+          gh release delete "v$VERSION" --repo "$PUBLIC_REPO" --yes 2>/dev/null || true
           gh release create "v$VERSION" dist/Tideloop-*.zip dist/Tideloop-*.zip.blockmap dist/Tideloop-*.dmg dist/latest-mac.yml \
-            --repo "$PUBLIC_REPO" --title "Tideloop $VERSION" --notes-file notes.md
+            --repo "$PUBLIC_REPO" --title "Tideloop $VERSION" --notes-file notes.md --draft
+          gh release edit "v$VERSION" --repo "$PUBLIC_REPO" --draft=false
       - name: Tag the source
         env:
           GH_TOKEN: ${{ github.token }}

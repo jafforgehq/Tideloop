@@ -48,14 +48,14 @@ export async function addFromText(app: AppContext, text: string, defaultDate: IS
   return error === null
 }
 
-/** Finds where a drop lands among the cards of a zone, ignoring the card being dragged. */
-function dropIndex(zone: HTMLElement, y: number, draggingId: string | null): number {
-  const cards = [...zone.querySelectorAll<HTMLElement>('[data-todo-id]')].filter((c) => c.dataset.todoId !== draggingId)
+/** Finds where a drop lands among a zone's cards. The dragged card and a list's folded done cards do not count. */
+function dropTarget(zone: HTMLElement, y: number, draggingId: string | null): { index: number; beforeId?: string } {
+  const cards = [...zone.querySelectorAll<HTMLElement>('[data-todo-id]')].filter((c) => c.dataset.todoId !== draggingId && !c.closest('.done'))
   const next = cards.findIndex((c) => {
     const box = c.getBoundingClientRect()
     return y < box.top + box.height / 2
   })
-  return next < 0 ? cards.length : next
+  return next < 0 ? { index: cards.length } : { index: next, beforeId: cards[next].dataset.todoId }
 }
 
 /** Drop behaviour for a day or a list. */
@@ -71,7 +71,7 @@ export function useDropZone(key: string, target: { date: ISODate | null; listId?
         if (!accepts(e)) return
         e.preventDefault()
         e.dataTransfer.dropEffect = 'move'
-        const index = ordered && e.dataTransfer.types.includes(TODO_TYPE) ? dropIndex(e.currentTarget, e.clientY, app.draggingId) : -1
+        const index = ordered && e.dataTransfer.types.includes(TODO_TYPE) ? dropTarget(e.currentTarget, e.clientY, app.draggingId).index : -1
         if (app.over?.key !== key || app.over.index !== index) app.setOver({ key, index })
       },
       onDragLeave(e: DragEvent<HTMLElement>) {
@@ -81,10 +81,10 @@ export function useDropZone(key: string, target: { date: ISODate | null; listId?
         e.preventDefault()
         const todo = e.dataTransfer.getData(TODO_TYPE)
         const event = e.dataTransfer.getData(EVENT_TYPE)
-        const index = ordered ? dropIndex(e.currentTarget, e.clientY, todo || null) : undefined
+        const beforeId = ordered ? dropTarget(e.currentTarget, e.clientY, todo || null).beforeId : undefined
         app.setOver(null)
         app.setDraggingId(null)
-        if (todo) void app.dispatch({ type: 'todo/move', id: todo, date: target.date, listId: target.listId, index })
+        if (todo) void app.dispatch({ type: 'todo/move', id: todo, date: target.date, listId: target.listId, beforeId })
         else if (event && target.date) void app.dispatch({ type: 'event/update', id: event, patch: { date: target.date } })
       }
     }

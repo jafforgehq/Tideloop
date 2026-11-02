@@ -97,8 +97,8 @@ export function reduce(data: PlannerData, action: Action): PlannerData {
       const date = action.date === null ? null : dateOf(action.date)
       const listId = action.listId === undefined ? current.listId : listOf(data, action.listId)
       const siblings = group(data.todos.filter((t) => t.id !== action.id), date, listId)
-      const index = Math.max(0, Math.min(action.index ?? siblings.length, siblings.length))
-      siblings.splice(index, 0, { ...current, date, listId })
+      const before = siblings.findIndex((t) => t.id === action.beforeId)
+      siblings.splice(before < 0 ? siblings.length : before, 0, { ...current, date, listId })
       const updated = new Map(siblings.map((t, order) => [t.id, { ...t, order }]))
       return { ...data, todos: data.todos.map((t) => updated.get(t.id) ?? t) }
     }

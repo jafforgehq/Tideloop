@@ -71,6 +71,24 @@ describe('wireUpdater', () => {
     expect(last()).toEqual({ state: 'error', message: 'Could not check for updates: offline' })
   })
 
+  it('keeps the message when the updater both emits an error and rejects, as the real one does', async () => {
+    const { updater, api, last } = setup()
+    updater.checkForUpdates.mockImplementationOnce(async () => {
+      updater.emit('error', new Error('offline'))
+      throw new Error('offline')
+    })
+    await api.check(true)
+    expect(last()).toEqual({ state: 'error', message: 'Could not check for updates: offline' })
+  })
+
+  it('clears an old error when a later background check starts', async () => {
+    const { updater, api, last } = setup()
+    await api.check(true)
+    updater.emit('error', new Error('offline'))
+    await api.check(false)
+    expect(last()).toEqual({ state: 'idle' })
+  })
+
   it('survives a rejected check', async () => {
     const { updater, api, last } = setup()
     updater.checkForUpdates.mockRejectedValueOnce(new Error('offline'))

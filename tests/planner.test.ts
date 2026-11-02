@@ -38,13 +38,24 @@ describe('todos', () => {
     expect(order(d, '2026-11-05')).toEqual(['z', 'a'])
     expect(order(d, '2026-11-04')).toEqual(['b', 'c'])
   })
-  it('reorders inside a day at an index', () => {
-    const d = reduce(base(), { type: 'todo/move', id: 'c', date: '2026-11-04', index: 0 })
+  it('reorders inside a day, before a named todo', () => {
+    const d = reduce(base(), { type: 'todo/move', id: 'c', date: '2026-11-04', beforeId: 'a' })
     expect(order(d, '2026-11-04')).toEqual(['c', 'a', 'b'])
   })
-  it('counts the index without the moved todo', () => {
-    const d = reduce(base(), { type: 'todo/move', id: 'a', date: '2026-11-04', index: 1 })
+  it('moves down inside a day', () => {
+    const d = reduce(base(), { type: 'todo/move', id: 'a', date: '2026-11-04', beforeId: 'c' })
     expect(order(d, '2026-11-04')).toEqual(['b', 'a', 'c'])
+  })
+  it('lands beside the named todo even with done todos in between', () => {
+    let d = emptyData()
+    for (const id of ['a', 'done', 'c', 'x']) d = reduce(d, { type: 'todo/add', id, title: id })
+    d = reduce(d, { type: 'todo/toggle', id: 'done' })
+    d = reduce(d, { type: 'todo/move', id: 'x', date: null, beforeId: 'c' })
+    expect(order(d, null)).toEqual(['a', 'done', 'x', 'c'])
+  })
+  it('goes to the end when the named todo has gone', () => {
+    const d = reduce(base(), { type: 'todo/move', id: 'a', date: '2026-11-04', beforeId: 'gone' })
+    expect(order(d, '2026-11-04')).toEqual(['b', 'c', 'a'])
   })
   it('moves back to no date and can change list', () => {
     let d = reduce(base(), { type: 'list/add', id: 'l2', name: 'Other' })

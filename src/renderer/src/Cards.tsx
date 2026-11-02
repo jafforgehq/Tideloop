@@ -28,9 +28,9 @@ function dragHandlers(app: AppContext, type: string, id: string) {
 function todoKeys(app: AppContext, todo: Todo) {
   return (e: KeyboardEvent<HTMLElement>) => {
     if (e.target !== e.currentTarget) return
-    const move = (date: string | null, index?: number) => {
+    const move = (date: string | null) => {
       app.focusAfterRender(todo.id)
-      void app.dispatch({ type: 'todo/move', id: todo.id, date, index })
+      void app.dispatch({ type: 'todo/move', id: todo.id, date })
       app.announce(date ? `Moved ${todo.title} to ${dayLabel(date)}` : `Moved ${todo.title} to its list`)
     }
     if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
@@ -40,13 +40,15 @@ function todoKeys(app: AppContext, todo: Todo) {
       else if (step === 1) move(app.today)
     } else if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       e.preventDefault()
-      const siblings = app.data.todos
-        .filter((t) => t.date === todo.date && (todo.date !== null || t.listId === todo.listId))
+      // A list folds its done todos away, so reordering steps over them.
+      const visible = app.data.todos
+        .filter((t) => t.date === todo.date && (todo.date !== null || (t.listId === todo.listId && t.done === todo.done)))
         .sort((a, b) => a.order - b.order)
-      const next = siblings.findIndex((t) => t.id === todo.id) + (e.key === 'ArrowUp' ? -1 : 1)
-      if (next >= 0 && next < siblings.length) {
+      const at = visible.findIndex((t) => t.id === todo.id)
+      const up = e.key === 'ArrowUp'
+      if (up ? at > 0 : at < visible.length - 1) {
         app.focusAfterRender(todo.id)
-        void app.dispatch({ type: 'todo/move', id: todo.id, date: todo.date, index: next })
+        void app.dispatch({ type: 'todo/move', id: todo.id, date: todo.date, beforeId: up ? visible[at - 1].id : visible[at + 2]?.id })
       }
     } else if (e.key === ' ') {
       e.preventDefault()

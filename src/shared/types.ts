@@ -52,7 +52,7 @@ export interface PlannerData {
 export type Action =
   | { type: 'todo/add'; id: string; title: string; listId?: string; date?: ISODate | null; minutes?: number; notes?: string }
   | { type: 'todo/update'; id: string; patch: Partial<Pick<Todo, 'title' | 'listId' | 'date' | 'minutes' | 'notes' | 'done'>> }
-  | { type: 'todo/move'; id: string; date: ISODate | null; listId?: string; index?: number }
+  | { type: 'todo/move'; id: string; date: ISODate | null; listId?: string; beforeId?: string }
   | { type: 'todo/toggle'; id: string }
   | { type: 'todo/delete'; id: string }
   | { type: 'todo/rollover'; today: ISODate }
