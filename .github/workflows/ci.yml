@@ -82,6 +82,17 @@ jobs:
             echo "::error::Missing secrets:$missing. Run scripts/setup-ci-secrets.sh, then re-run this workflow."
             exit 1
           fi
+      # Also here on Linux: a token that cannot publish should fail now, not after a 10 minute macOS build.
+      - name: Check the release token can publish
+        if: steps.check.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+        run: |
+          id=$(gh api -X POST "repos/$PUBLIC_REPO/releases" -f tag_name=token-check -f name="Token check" -F draft=true --jq .id) || {
+            echo "::error::RELEASES_TOKEN cannot create releases on $PUBLIC_REPO. It needs Contents: Read and write on that repo. Run scripts/setup-ci-secrets.sh token."
+            exit 1
+          }
+          gh api -X DELETE "repos/$PUBLIC_REPO/releases/$id"
 
   release:
     needs: version
