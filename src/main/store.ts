@@ -37,6 +37,7 @@ export function createStore({ data, save, onSaveError }: StoreOptions) {
     },
     dispatch(action: Action) {
       const next = reduce(state, action)
+      if (next === state) return
       if (action.type !== 'settings/update') {
         past.push(state)
         if (past.length > HISTORY_LIMIT) past.shift()

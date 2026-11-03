@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.3
+
+- A planner file that cannot be read for a moment, for example because of permissions, is no longer moved aside as if it were damaged.
+- A hand-edited setting with the wrong kind of value no longer hangs the app on launch.
+- Move overdue to today with nothing overdue no longer adds a step to undo.
+- New token now takes effect at once, even while the Claude Code server is still starting.
+- A second copy of Tideloop now quits without touching your planner file.
+- The window refuses redirects and permission requests such as camera or location.
+
 ## 0.0.2
 
 - An interactive tutorial on first run, using your own first todo. You can replay it from Settings.

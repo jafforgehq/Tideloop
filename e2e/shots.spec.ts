@@ -69,4 +69,19 @@ test.describe('screenshots', () => {
       await app.close()
     })
   }
+
+  test('tutorial', async () => {
+    mkdirSync(OUT!, { recursive: true })
+    const dir = tempDir()
+    seed(dir, [...actions('tide'), { type: 'settings/update', patch: { tutorialDone: false } }], emptyData())
+    const { app, page } = await launch(dir)
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setContentSize(1440, 900))
+    await page.clock.setFixedTime(new Date(NOW))
+    await page.reload()
+    await page.locator('[data-app-ready]').waitFor()
+    await expect(page.getByRole('region', { name: 'Tutorial' })).toBeVisible()
+    await page.waitForTimeout(800)
+    await page.screenshot({ path: `${OUT}/tutorial-tide.png` })
+    await app.close()
+  })
 })
