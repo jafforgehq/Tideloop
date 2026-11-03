@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -66,4 +66,16 @@ describe('loadData', () => {
     const aside = readdirSync(dir).find((f) => f.startsWith('planner.unreadable-'))!
     expect(readFileSync(join(dir, aside), 'utf8')).toBe(newer)
   })
+  it('does not move a healthy file aside when it cannot be read right now', () => {
+    saveData(dir, withTodo('a'))
+    chmodSync(file(), 0o000)
+    try {
+      expect(() => loadData(dir)).toThrow()
+    } finally {
+      chmodSync(file(), 0o600)
+    }
+    expect(readdirSync(dir).filter((f) => f.includes('unreadable'))).toEqual([])
+    expect(loadData(dir).data.todos).toHaveLength(1)
+  })
+
 })

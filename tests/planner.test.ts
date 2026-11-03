@@ -141,6 +141,12 @@ describe('settings', () => {
 })
 
 describe('normalize', () => {
+  it('falls back to the default for a setting that is not true or false', () => {
+    const raw = JSON.parse(JSON.stringify(emptyData()))
+    raw.settings.mcpEnabled = 'false'
+    raw.settings.autoUpdate = 0
+    expect(normalize(raw).settings).toMatchObject({ mcpEnabled: false, autoUpdate: true })
+  })
   it('round-trips valid data', () => {
     const d = base()
     expect(normalize(JSON.parse(JSON.stringify(d)))).toEqual(d)
@@ -171,4 +177,14 @@ describe('normalize', () => {
     raw.todos[0].date = 'soon'
     expect(() => normalize(raw)).toThrow(PlannerError)
   })
+describe('settings and rollover details', () => {
+  it('refuses a setting that is not true or false', () => {
+    expect(() => reduce(emptyData(), { type: 'settings/update', patch: { mcpEnabled: 'yes' as never } })).toThrow(PlannerError)
+  })
+  it('returns the same state when nothing is overdue', () => {
+    const data = reduce(emptyData(), { type: 'todo/add', id: 'a', title: 'a', date: '2026-11-05' })
+    expect(reduce(data, { type: 'todo/rollover', today: '2026-11-04' })).toBe(data)
+  })
+})
+
 })

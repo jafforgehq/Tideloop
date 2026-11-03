@@ -1,6 +1,6 @@
 import { closeSync, copyFileSync, existsSync, fsyncSync, openSync, readFileSync, renameSync, writeSync } from 'node:fs'
 import { join } from 'node:path'
-import { emptyData, normalize } from '../shared/planner'
+import { emptyData, normalize, PlannerError } from '../shared/planner'
 import type { PlannerData } from '../shared/types'
 
 const FILE = 'planner.json'
@@ -30,6 +30,8 @@ export function loadData(dir: string): { data: PlannerData; notice: string | nul
   try {
     return { data: read(file), notice: null }
   } catch (error) {
+    // Only a file that was read and is wrong gets moved aside. A read that failed (permissions, a busy disk) may succeed next time.
+    if (!(error instanceof SyntaxError || error instanceof PlannerError)) throw error
     reason = /newer/.test((error as Error).message)
       ? 'Your planner file was made by a newer version of Tideloop'
       : 'Your planner file could not be read'

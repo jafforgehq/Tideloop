@@ -79,14 +79,14 @@ export function App() {
     apply()
     media.addEventListener('change', apply)
     return () => media.removeEventListener('change', apply)
-  }, [s?.themeMode, s?.lightTheme, s?.darkTheme, s?.fixedTheme]) // eslint-disable-line
+  }, [s?.themeMode, s?.lightTheme, s?.darkTheme, s?.fixedTheme])
 
   const loaded = data !== null
   useEffect(() => {
     if (!loaded) return
     api.ready()
     if (!data.settings.tutorialDone) setTutorial(startTutorial(data))
-  }, [loaded]) // eslint-disable-line
+  }, [loaded])
 
   useEffect(() => {
     if (data) setTutorial((current) => current && advanceTutorial(current, data, view))

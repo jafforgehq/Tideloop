@@ -14,7 +14,8 @@ import { wireUpdater } from './updater'
 const SIX_HOURS = 6 * 60 * 60 * 1000
 const FIRST_CHECK_DELAY = 10_000
 
-if (!app.requestSingleInstanceLock()) app.quit()
+// A second copy must not touch the data file the first one is using.
+if (!app.requestSingleInstanceLock()) app.exit(0)
 
 const dir = app.getPath('userData')
 const loaded = loadData(dir)
@@ -67,6 +68,8 @@ function createWindow(): void {
   // Only this app's own page may load, and nothing may open a new window.
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   win.webContents.on('will-navigate', (event) => event.preventDefault())
+  win.webContents.on('will-redirect', (event) => event.preventDefault())
+  win.webContents.session.setPermissionRequestHandler((_contents, _permission, allow) => allow(false))
   win.on('close', () => {
     try {
       writeFileSync(boundsFile, JSON.stringify(win.getNormalBounds()))
@@ -81,7 +84,7 @@ function createWindow(): void {
   setTimeout(() => {
     if (!win.isDestroyed() && !win.isVisible()) win.show()
   }, 3000)
-  if (process.env.ELECTRON_RENDERER_URL) void win.loadURL(process.env.ELECTRON_RENDERER_URL)
+  if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) void win.loadURL(process.env.ELECTRON_RENDERER_URL)
   else void win.loadFile(join(__dirname, '../renderer/index.html'))
 }
 
@@ -108,6 +111,8 @@ function startUpdates(): void {
 let mcp: Awaited<ReturnType<typeof startMcpServer>> | null = null
 let mcpError: string | null = null
 let mcpBusy = false
+// Set when the token changes while a start is in flight, so the server that finishes starting restarts with the new one.
+let tokenStale = false
 
 function mcpInfo(): McpInfo {
   const enabled = store.getState().settings.mcpEnabled
@@ -121,6 +126,7 @@ async function syncMcp(): Promise<void> {
   try {
     const wanted = store.getState().settings.mcpEnabled
     if (wanted && !mcp) {
+      tokenStale = false
       try {
         mcp = await startMcpServer({ store, port: MCP_PORT, token: loadOrCreateToken(dir), version: app.getVersion() })
         mcpError = null
@@ -136,6 +142,12 @@ async function syncMcp(): Promise<void> {
   } finally {
     mcpBusy = false
   }
+  if (tokenStale && mcp) {
+    tokenStale = false
+    await mcp.close()
+    mcp = null
+    return syncMcp()
+  }
   // The setting may have changed while the server was starting or stopping.
   if (store.getState().settings.mcpEnabled !== (mcp !== null) && !mcpError) return syncMcp()
   send('mcp:info', mcpInfo())
@@ -144,7 +156,8 @@ async function syncMcp(): Promise<void> {
 // IPC
 
 /** Requests count only from this app's own window. */
-const trusted = (event: IpcMainInvokeEvent | IpcMainEvent) => event.sender === window?.webContents
+const trusted = (event: IpcMainInvokeEvent | IpcMainEvent) =>
+  event.sender === window?.webContents && event.senderFrame === event.sender.mainFrame
 const handle = (channel: string, fn: (...args: never[]) => unknown) =>
   ipcMain.handle(channel, (event, ...args) => {
     if (!trusted(event)) throw new Error('Refused')
@@ -170,6 +183,7 @@ handle('planner:redo', () => store.redo())
 handle('app:info', () => ({ version: app.getVersion(), notice: loaded.notice, dataFile: join(dir, 'planner.json') }))
 on('app:ready', () => window?.show())
 on('theme:native', (source: 'system' | 'light' | 'dark', background: string) => {
+  if (source !== 'system' && source !== 'light' && source !== 'dark') return
   nativeTheme.themeSource = source
   if (/^#[0-9a-fA-F]{6}$/.test(background)) window?.setBackgroundColor(background)
 })
@@ -182,6 +196,10 @@ handle('mcp:info', () => mcpInfo())
 handle('mcp:copy', () => clipboard.writeText(mcpCommand(MCP_PORT, loadOrCreateToken(dir))))
 handle('mcp:regenerate', async () => {
   regenerateToken(dir)
+  if (mcpBusy) {
+    tokenStale = true
+    return
+  }
   // The running server holds the old token, so restart it to make the old one stop working at once.
   await mcp?.close()
   mcp = null

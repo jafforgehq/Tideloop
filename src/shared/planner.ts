@@ -55,6 +55,9 @@ function checkSettings(patch: Partial<Settings>): Partial<Settings> {
   const hours = patch.fullDayHours
   if (hours !== undefined && !(Number.isInteger(hours) && hours >= 1 && hours <= 24)) fail('A full day must be 1 to 24 hours')
   if (patch.themeMode !== undefined && patch.themeMode !== 'system' && patch.themeMode !== 'fixed') fail('Unknown theme mode')
+  for (const key of ['autoUpdate', 'mcpEnabled', 'tutorialDone'] as const) {
+    if (patch[key] !== undefined && typeof patch[key] !== 'boolean') fail(`${key} must be true or false`)
+  }
   for (const theme of [patch.lightTheme, patch.darkTheme, patch.fixedTheme]) {
     if (theme !== undefined && !THEME_IDS.includes(theme)) fail(`Unknown theme: ${String(theme)}`)
   }
@@ -115,6 +118,7 @@ export function reduce(data: PlannerData, action: Action): PlannerData {
       const late = data.todos
         .filter((t) => t.date !== null && t.date < today && !t.done)
         .sort((a, b) => a.date!.localeCompare(b.date!) || a.order - b.order)
+      if (late.length === 0) return data
       let order = nextOrder(data.todos, today, '')
       const moved = new Map(late.map((t) => [t.id, { ...t, date: today, order: order++ }]))
       return { ...data, todos: data.todos.map((t) => moved.get(t.id) ?? t) }

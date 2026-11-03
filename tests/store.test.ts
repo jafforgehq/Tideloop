@@ -81,4 +81,14 @@ describe('store', () => {
     expect(store.getState().todos).toHaveLength(1)
     expect(onSaveError).toHaveBeenCalledWith(expect.objectContaining({ message: 'disk full' }))
   })
+  it('ignores an action that changes nothing: no save, no history', () => {
+    const { store, save } = make()
+    store.dispatch(add('a'))
+    save.mockClear()
+    store.dispatch({ type: 'todo/rollover', today: '2026-11-04' })
+    expect(save).not.toHaveBeenCalled()
+    store.undo()
+    expect(store.getState().todos).toHaveLength(0)
+  })
+
 })

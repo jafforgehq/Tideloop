@@ -23,7 +23,7 @@ env:
 
 jobs:
   test:
-    # Linux, because macOS minutes bill at 10x on a private repo.
+    # Linux: it is the cheapest runner, and nothing here needs macOS.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -43,7 +43,8 @@ jobs:
           retention-days: 7
 
   version:
-    if: github.event_name == 'push'
+    # Releases need the maintainer's signing secrets, so a fork's push to main only runs the tests.
+    if: github.event_name == 'push' && github.repository == 'jafforgehq/Tideloop'
     needs: test
     runs-on: ubuntu-latest
     outputs:
