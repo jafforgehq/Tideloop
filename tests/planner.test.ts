@@ -153,6 +153,16 @@ describe('normalize', () => {
   it.each([[null], [[]], ['x'], [{ version: 1 }]])('rejects %j', (raw) => {
     expect(() => normalize(raw)).toThrow(PlannerError)
   })
+  it('offers the tutorial to someone new', () => {
+    const raw = JSON.parse(JSON.stringify(emptyData()))
+    delete raw.settings.tutorialDone
+    expect(normalize(raw).settings.tutorialDone).toBe(false)
+  })
+  it('does not offer the tutorial to someone who already has plans', () => {
+    const raw = JSON.parse(JSON.stringify(base()))
+    delete raw.settings.tutorialDone
+    expect(normalize(raw).settings.tutorialDone).toBe(true)
+  })
   it('rejects a newer file version', () => {
     expect(() => normalize({ ...base(), version: 2 })).toThrow(/newer/)
   })

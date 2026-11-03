@@ -4,6 +4,7 @@ import type { AppInfo, MenuCommand } from '../../shared/ipc'
 import { reduce } from '../../shared/planner'
 import { resolveTheme, type Theme } from '../../shared/themes'
 import { monthFinding, overdueCount, weekFinding } from '../../shared/tide'
+import { advanceTutorial, nextTutorialStep, startTutorial, type TutorialState } from '../../shared/tutorial'
 import type { Action, PlannerData, UpdateStatus } from '../../shared/types'
 import { api, Context, type AppContext, type EditTarget } from './context'
 import { Dock } from './Dock'
@@ -11,6 +12,7 @@ import { Editor } from './Editor'
 import { Chevron } from './icons'
 import { Month } from './Month'
 import { Settings } from './Settings'
+import { Tutorial } from './Tutorial'
 import { Week } from './Week'
 
 const TOAST_MS = 6000
@@ -42,6 +44,7 @@ export function App() {
   const [spoken, setSpoken] = useState('')
   const [over, setOver] = useState<AppContext['over']>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [tutorial, setTutorial] = useState<TutorialState | null>(null)
   const quickAdd = useRef<HTMLInputElement>(null)
   const pendingFocus = useRef<string | null>(null)
 
@@ -80,8 +83,20 @@ export function App() {
 
   const loaded = data !== null
   useEffect(() => {
-    if (loaded) api.ready()
-  }, [loaded])
+    if (!loaded) return
+    api.ready()
+    if (!data.settings.tutorialDone) setTutorial(startTutorial(data))
+  }, [loaded]) // eslint-disable-line
+
+  useEffect(() => {
+    if (data) setTutorial((current) => current && advanceTutorial(current, data, view))
+  }, [data, view])
+
+  // These steps point at things only the week view shows.
+  const tutorialStep = tutorial?.step
+  useEffect(() => {
+    if (tutorialStep === 'drag-to-day' || tutorialStep === 'read-tide' || tutorialStep === 'tick-off') setView('week')
+  }, [tutorialStep])
 
   useEffect(() => {
     if (toastState && !toastState.sticky) {
@@ -205,7 +220,7 @@ export function App() {
             )}
             <div className="segmented" role="group" aria-label="View">
               <button aria-pressed={view === 'week'} onClick={() => setView('week')}>Week</button>
-              <button aria-pressed={view === 'month'} onClick={() => setView('month')}>Month</button>
+              <button aria-pressed={view === 'month'} data-tour="month" onClick={() => setView('month')}>Month</button>
             </div>
             <div className="nav-buttons">
               <button className="btn square" aria-label={view === 'week' ? 'Previous week' : 'Previous month'} onClick={() => step(-1)}><Chevron left /></button>
@@ -217,7 +232,17 @@ export function App() {
         </main>
       </div>
       {editing && <Editor key={JSON.stringify(editing)} target={editing} onClose={() => setEditing(null)} />}
-      {settingsOpen && info && <Settings update={update} version={info.version} dataFile={info.dataFile} onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && info && <Settings update={update} version={info.version} dataFile={info.dataFile} onClose={() => setSettingsOpen(false)} onReplay={() => {
+        setSettingsOpen(false)
+        setView('week')
+        goTo(todayISO())
+        setTutorial(startTutorial(data))
+      }} />}
+      {tutorial && <Tutorial state={tutorial} onNext={() => setTutorial(nextTutorialStep(tutorial))} onEnd={() => {
+        setTutorial(null)
+        setView('week')
+        void dispatch({ type: 'settings/update', patch: { tutorialDone: true } })
+      }} />}
       <div className="toasts" role="status">
         {toastState && (
           <div className="toast">

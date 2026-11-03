@@ -183,6 +183,18 @@ h1 { font-size: 26px; line-height: 32px; font-weight: 700; letter-spacing: -0.01
 .toasts { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 10; pointer-events: none; }
 .toast { pointer-events: auto; display: flex; gap: 14px; align-items: center; max-width: 620px; padding: 9px 14px; border-radius: var(--radius); background: var(--ink); color: var(--ground); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); }
 
+/* Tutorial. Nothing here blocks the app, because each step needs the real controls. */
+.tour-ring { position: fixed; z-index: 20; pointer-events: none; border-radius: var(--radius); outline: 3px solid var(--accent); outline-offset: 2px; animation: tour-pulse 1.6s ease-in-out infinite; }
+@keyframes tour-pulse { 50% { outline-offset: 5px; } }
+.tour-card { position: fixed; z-index: 21; right: 24px; bottom: 24px; width: 330px; display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: calc(var(--radius) + 5px); background: var(--ink); color: var(--ground); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3); }
+.tour-card h2 { font-size: 18px; line-height: 24px; font-weight: 700; }
+.tour-count { font-size: 12px; }
+.tour-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; min-height: 34px; }
+.tour-card .btn { border-color: var(--ground); }
+.tour-card .btn:hover:not(:disabled) { background: none; opacity: 0.85; }
+.tour-card .btn.primary, .tour-card .btn.primary:hover { background: var(--ground); color: var(--ink); }
+
 @media (prefers-reduced-motion: reduce) {
   .tide .front, .tide .back, .level { transition: none; }
+  .tour-ring { animation: none; }
 }

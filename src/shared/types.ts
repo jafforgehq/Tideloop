@@ -39,6 +39,7 @@ export interface Settings {
   fullDayHours: number
   autoUpdate: boolean
   mcpEnabled: boolean
+  tutorialDone: boolean
 }
 
 export interface PlannerData {

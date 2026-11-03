@@ -50,7 +50,7 @@ const updateText = (status: UpdateStatus, version: string): string => {
   }
 }
 
-export function Settings({ update, version, dataFile, onClose }: { update: UpdateStatus; version: string; dataFile: string; onClose: () => void }) {
+export function Settings({ update, version, dataFile, onClose, onReplay }: { update: UpdateStatus; version: string; dataFile: string; onClose: () => void; onReplay: () => void }) {
   const app = useApp()
   const s = app.data.settings
   const ref = useRef<HTMLDialogElement>(null)
@@ -131,6 +131,11 @@ export function Settings({ update, version, dataFile, onClose }: { update: Updat
             </div>
           </>
         )}
+      </section>
+
+      <section className="setting" aria-label="Help">
+        <h3>Help</h3>
+        <div className="row"><button className="btn" onClick={onReplay}>Show the tutorial again</button></div>
       </section>
 
       <section className="setting" aria-label="Your data">

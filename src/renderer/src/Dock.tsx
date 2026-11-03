@@ -90,7 +90,7 @@ export const Dock = forwardRef<HTMLInputElement, { anchor: string; update: Updat
         <input
           id="quick-add"
           ref={ref}
-          placeholder="Report fri 1h, or Dentist 14:30"
+          placeholder="Buy milk, or Dentist fri 14:30"
           onKeyDown={(e) => {
             const input = e.currentTarget
             if (e.key === 'Enter') void addFromText(app, input.value, null).then((ok) => ok && (input.value = ''))

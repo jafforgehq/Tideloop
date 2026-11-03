@@ -1,7 +1,7 @@
 {
   "name": "tideloop",
   "productName": "Tideloop",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Tide chart desktop planner",
   "author": "Feda Hadziselimovic",
   "private": true,
