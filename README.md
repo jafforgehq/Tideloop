@@ -26,7 +26,7 @@ Tideloop runs on macOS only. Your plans stay on your Mac in one JSON file. The a
 - **Week view with a tide chart.** Each day's planned time raises the water. A full day reaches the top, so you see an overloaded Thursday before you commit to it. Set how long a full day is in Settings.
 - **Todo lists beside the week.** Drag a todo from a list onto a day, between days, or back to a list. Everything also works from the keyboard: `⌥→` and `⌥←` move the selected todo to the next or previous day, `⌥↑` and `⌥↓` reorder it.
 - **Month view** for the longer look ahead, with the same drag and drop.
-- **Weekly and monthly review.** See where your finished time went: which lists got the most, how much you finished against what you planned, and your longest todos. A todo counts on the day it is planned for.
+- **Weekly and monthly review.** See where your finished time went: which lists got the most, how much you finished against what you planned, and your longest todos. A finished todo counts on the day you ticked it off.
 - **Quick add.** Type `Dentist fri 14:30 45m #health` in New todo. A time makes it an event on the calendar. A day word, a duration and a `#list` are picked up, and anything unclear stays in the title. `Buy milk` just goes in a list.
 - **Six themes**, with a separate pick for system light and dark. Every theme is checked against WCAG contrast in the tests.
 - **A short tutorial on first run** that uses your own first todo. Skip it any time, replay it from Settings.

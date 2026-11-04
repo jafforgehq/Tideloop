@@ -92,3 +92,21 @@ describe('store', () => {
   })
 
 })
+
+describe('store clock', () => {
+  const clocked = () => createStore({ data: emptyData(), save: vi.fn(), today: () => '2026-11-05' })
+  it('stamps the finish day on toggle and on update', () => {
+    const store = clocked()
+    store.dispatch(add('a'))
+    store.dispatch(add('b'))
+    store.dispatch({ type: 'todo/toggle', id: 'a' })
+    store.dispatch({ type: 'todo/update', id: 'b', patch: { done: true } })
+    expect(store.getState().todos.map((t) => t.doneAt)).toEqual(['2026-11-05', '2026-11-05'])
+  })
+  it('keeps a day the caller sent', () => {
+    const store = clocked()
+    store.dispatch(add('a'))
+    store.dispatch({ type: 'todo/toggle', id: 'a', today: '2026-11-01' })
+    expect(store.getState().todos[0].doneAt).toBe('2026-11-01')
+  })
+})

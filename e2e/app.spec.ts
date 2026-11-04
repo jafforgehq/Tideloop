@@ -249,3 +249,15 @@ test('the review shows where the finished time went, by week and by month', asyn
   await expect(page.getByText('Nothing finished in this period yet.')).toBeVisible()
   await app.close()
 })
+
+test('the review counts a todo on the day it was ticked off, even from a list', async () => {
+  const dir = tempDir()
+  seed(dir, [{ type: 'todo/add', id: 'a', title: 'Loose end', listId: 'home', minutes: 90 }])
+  const { app, page } = await launch(dir)
+  await page.getByRole('button', { name: 'Mark Loose end done' }).click()
+  await page.getByRole('button', { name: 'Review', exact: true }).click()
+  await expect(page.getByText('Most focus went to Home')).toBeVisible()
+  await expect(page.getByText('1 of 1 todos')).toBeVisible()
+  await expect(page.locator('.rows').last()).toContainText('Loose end')
+  await app.close()
+})

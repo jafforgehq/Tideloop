@@ -188,3 +188,40 @@ describe('settings and rollover details', () => {
 })
 
 })
+
+describe('doneAt', () => {
+  const todo = (d: ReturnType<typeof emptyData>) => d.todos[0]
+  const base = () => reduce(emptyData(), { type: 'todo/add', id: 'a', title: 'A', date: '2026-11-02' })
+  it('starts empty', () => expect(todo(base()).doneAt).toBeNull())
+  it('toggle stamps the day it was finished and clears it again', () => {
+    const done = reduce(base(), { type: 'todo/toggle', id: 'a', today: '2026-11-05' })
+    expect(todo(done)).toMatchObject({ done: true, doneAt: '2026-11-05', date: '2026-11-02' })
+    expect(todo(reduce(done, { type: 'todo/toggle', id: 'a', today: '2026-11-06' }))).toMatchObject({ done: false, doneAt: null })
+  })
+  it('toggle without a day leaves it empty', () => {
+    expect(todo(reduce(base(), { type: 'todo/toggle', id: 'a' }))).toMatchObject({ done: true, doneAt: null })
+  })
+  it('update stamps on done, keeps the first day, clears on not done', () => {
+    const done = reduce(base(), { type: 'todo/update', id: 'a', patch: { done: true }, today: '2026-11-05' })
+    expect(todo(done).doneAt).toBe('2026-11-05')
+    const again = reduce(done, { type: 'todo/update', id: 'a', patch: { done: true, title: 'B' }, today: '2026-11-07' })
+    expect(todo(again).doneAt).toBe('2026-11-05')
+    expect(todo(reduce(again, { type: 'todo/update', id: 'a', patch: { done: false } })).doneAt).toBeNull()
+  })
+  it('rejects a bad day', () => {
+    expect(() => reduce(base(), { type: 'todo/toggle', id: 'a', today: 'soon' })).toThrow(PlannerError)
+  })
+})
+
+describe('normalize and doneAt', () => {
+  const file = (todos: unknown[]) => ({ version: 1, lists: [{ id: 'work', name: 'Work', color: 0 }], events: [], todos, settings: {} })
+  const old = { id: 'a', title: 'A', listId: 'work', date: '2026-11-02', done: true, minutes: 30, order: 0, notes: 'n' }
+  it('loads a file from before doneAt with every todo intact', () => {
+    expect(normalize(file([old])).todos).toEqual([{ ...old, doneAt: null }])
+  })
+  it('keeps a valid doneAt', () => expect(normalize(file([{ ...old, doneAt: '2026-11-05' }])).todos[0].doneAt).toBe('2026-11-05'))
+  it('drops a doneAt that is not a date, or sits on an open todo', () => {
+    expect(normalize(file([{ ...old, doneAt: 'later' }])).todos[0].doneAt).toBeNull()
+    expect(normalize(file([{ ...old, done: false, doneAt: '2026-11-05' }])).todos[0].doneAt).toBeNull()
+  })
+})

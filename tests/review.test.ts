@@ -55,3 +55,27 @@ describe('reviewFinding', () => {
     expect(reviewFinding(review(build(), '2027-01-01', '2027-01-07'))).toBe('Nothing finished in this period yet.')
   })
 })
+
+describe('review by the day a todo was finished', () => {
+  const finished = (id: string, date: string | null, doneAt: string | null, minutes = 60) => {
+    let d = reduce(emptyData(), { type: 'todo/add', id, title: id, listId: 'work', date, minutes })
+    d = reduce(d, { type: 'todo/toggle', id, today: doneAt ?? undefined })
+    return d
+  }
+  it('counts a todo on the day it was finished, not the day it was planned', () => {
+    const d = finished('a', '2026-10-28', '2026-11-04')
+    expect(review(d, '2026-11-02', '2026-11-08').done).toEqual({ count: 1, minutes: 60 })
+    expect(review(d, '2026-10-26', '2026-11-01').done).toEqual({ count: 0, minutes: 0 })
+  })
+  it('counts a todo with no planned day once it is finished', () => {
+    expect(review(finished('a', null, '2026-11-04'), '2026-11-02', '2026-11-08').done.count).toBe(1)
+  })
+  it('falls back to the planned day for a todo finished before doneAt existed', () => {
+    expect(review(finished('a', '2026-11-03', null), '2026-11-02', '2026-11-08').done.count).toBe(1)
+  })
+  it('keeps open todos on their planned day', () => {
+    let d = finished('a', '2026-11-03', '2026-11-04')
+    d = reduce(d, { type: 'todo/add', id: 'o', title: 'o', listId: 'work', date: '2026-11-05', minutes: 30 })
+    expect(review(d, '2026-11-02', '2026-11-08')).toMatchObject({ planned: { count: 2, minutes: 90 }, done: { count: 1 } })
+  })
+})

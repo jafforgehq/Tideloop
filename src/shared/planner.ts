@@ -64,6 +64,9 @@ function checkSettings(patch: Partial<Settings>): Partial<Settings> {
   return patch
 }
 
+/** The day a todo was ticked off. The caller supplies it, since the reducer has no clock. */
+const finishDay = (today: ISODate | undefined): ISODate | null => (today === undefined ? null : dateOf(today))
+
 /** Applies one action and returns new state. Throws PlannerError and changes nothing when input is bad. */
 export function reduce(data: PlannerData, action: Action): PlannerData {
   switch (action.type) {
@@ -76,6 +79,7 @@ export function reduce(data: PlannerData, action: Action): PlannerData {
         listId,
         date,
         done: false,
+        doneAt: null,
         minutes: action.minutes === undefined ? 30 : minutesOf(action.minutes),
         order: nextOrder(data.todos, date, listId),
         notes: action.notes ?? ''
@@ -93,6 +97,7 @@ export function reduce(data: PlannerData, action: Action): PlannerData {
         listId: patch.listId === undefined ? current.listId : listOf(data, patch.listId),
         date: patch.date === undefined || patch.date === null ? (patch.date === null ? null : current.date) : dateOf(patch.date)
       }
+      if (patch.done !== undefined) next.doneAt = patch.done ? (current.done ? current.doneAt : finishDay(action.today)) : null
       if (!sameGroup(current, next.date, next.listId)) next.order = nextOrder(data.todos, next.date, next.listId)
       return { ...data, todos: data.todos.map((t) => (t.id === action.id ? next : t)) }
     }
@@ -108,7 +113,7 @@ export function reduce(data: PlannerData, action: Action): PlannerData {
     }
     case 'todo/toggle': {
       const current = findTodo(data, action.id)
-      return { ...data, todos: data.todos.map((t) => (t.id === action.id ? { ...current, done: !current.done } : t)) }
+      return { ...data, todos: data.todos.map((t) => (t.id === action.id ? { ...current, done: !current.done, doneAt: current.done ? null : finishDay(action.today) } : t)) }
     }
     case 'todo/delete':
       findTodo(data, action.id)
@@ -195,6 +200,7 @@ export function normalize(raw: unknown): PlannerData {
       listId: listOf({ lists: checkedLists } as PlannerData, t.listId),
       date: t.date === null ? null : dateOf(t.date),
       done: t.done === true,
+      doneAt: t.done === true && isValidDate(t.doneAt) ? t.doneAt : null,
       minutes: minutesOf(t.minutes),
       order: typeof t.order === 'number' ? t.order : 0,
       notes: typeof t.notes === 'string' ? t.notes : ''

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.5
+
+- Review now counts a todo on the day you finished it, not the day it was planned for. That includes todos you tick off straight from a list. Todos finished before this version keep counting on their planned day.
+
 ## 0.0.4
 
 - Review: a weekly and monthly look at where your finished time went. It shows how many todos you finished, the time they took, which lists got the most, and your longest finished todos. Open it from the Review button or with ⌘ 3.

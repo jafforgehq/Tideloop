@@ -41,6 +41,7 @@ const todoView = (state: PlannerData, t: PlannerData['todos'][number]) => ({
   list: listName(state, t.listId),
   date: t.date,
   done: t.done,
+  doneAt: t.doneAt,
   minutes: t.minutes,
   notes: t.notes
 })
