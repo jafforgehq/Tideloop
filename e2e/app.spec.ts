@@ -225,3 +225,27 @@ test('the page has no Node access and cannot leave the app', async () => {
   expect(page.url()).toBe(url)
   await app.close()
 })
+
+test('the review shows where the finished time went, by week and by month', async () => {
+  const dir = tempDir()
+  seed(dir, [
+    { type: 'todo/add', id: 'a', title: 'Write report', listId: 'work', date: day(0), minutes: 120 },
+    { type: 'todo/toggle', id: 'a' },
+    { type: 'todo/add', id: 'b', title: 'Tidy shed', listId: 'home', date: day(1), minutes: 30 },
+    { type: 'todo/toggle', id: 'b' },
+    { type: 'todo/add', id: 'c', title: 'Open item', listId: 'work', date: day(2), minutes: 60 }
+  ])
+  const { app, page } = await launch(dir)
+  await page.getByRole('button', { name: 'Review', exact: true }).click()
+  await expect(page.getByText('Most focus went to Work')).toBeVisible()
+  await expect(page.getByText('2 of 3 todos')).toBeVisible()
+  const rows = page.locator('.rows [data-list]')
+  await expect(rows.first()).toContainText('Work')
+  await expect(rows.first()).toContainText('2h')
+  await expect(rows.nth(1)).toContainText('Home')
+  await page.getByRole('button', { name: 'Monthly' }).click()
+  await expect(page.locator('[data-review="month"]')).toBeVisible()
+  await page.getByRole('main').getByRole('button', { name: 'Next month' }).click()
+  await expect(page.getByText('Nothing finished in this period yet.')).toBeVisible()
+  await app.close()
+})

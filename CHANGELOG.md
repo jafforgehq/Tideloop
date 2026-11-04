@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.4
+
+- Review: a weekly and monthly look at where your finished time went. It shows how many todos you finished, the time they took, which lists got the most, and your longest finished todos. Open it from the Review button or with ⌘ 3.
+
 ## 0.0.3
 
 - A planner file that cannot be read for a moment, for example because of permissions, is no longer moved aside as if it were damaged.
