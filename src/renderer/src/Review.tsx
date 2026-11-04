@@ -27,7 +27,7 @@ export function Review({ from, to, span }: { from: ISODate; to: ISODate; span: '
           ))}
         </dl>
         {r.planned.count === 0 ? (
-          <p className="empty">No todos are planned in this {span}. Drag a todo onto a day and it shows up here.</p>
+          <p className="empty">Nothing finished or planned in this {span}. Tick off a todo, or drag one onto a day, and it shows up here.</p>
         ) : (
           <>
             <section aria-labelledby="by-list">
@@ -54,7 +54,7 @@ export function Review({ from, to, span }: { from: ISODate; to: ISODate; span: '
                     <li key={t.id}>
                       <span className="dot" style={{ background: colour(app.data.lists.find((l) => l.id === t.listId)?.color ?? 0) }} />
                       <button className="name link" onClick={() => app.edit({ kind: 'todo', id: t.id })}>{t.title}</button>
-                      <span className="num quiet">{dayLabel(t.date!)}</span>
+                      <span className="num quiet">{dayLabel((t.doneAt ?? t.date)!)}</span>
                       <span className="num">{formatMinutes(t.minutes)}</span>
                     </li>
                   ))}

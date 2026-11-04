@@ -16,6 +16,8 @@ export interface Todo {
   listId: string
   date: ISODate | null
   done: boolean
+  /** The day it was ticked off. Null while open, and for todos finished before this was recorded. */
+  doneAt: ISODate | null
   minutes: number
   order: number
   notes: string
@@ -52,9 +54,9 @@ export interface PlannerData {
 
 export type Action =
   | { type: 'todo/add'; id: string; title: string; listId?: string; date?: ISODate | null; minutes?: number; notes?: string }
-  | { type: 'todo/update'; id: string; patch: Partial<Pick<Todo, 'title' | 'listId' | 'date' | 'minutes' | 'notes' | 'done'>> }
+  | { type: 'todo/update'; id: string; patch: Partial<Pick<Todo, 'title' | 'listId' | 'date' | 'minutes' | 'notes' | 'done'>>; today?: ISODate }
   | { type: 'todo/move'; id: string; date: ISODate | null; listId?: string; beforeId?: string }
-  | { type: 'todo/toggle'; id: string }
+  | { type: 'todo/toggle'; id: string; today?: ISODate }
   | { type: 'todo/delete'; id: string }
   | { type: 'todo/rollover'; today: ISODate }
   | { type: 'event/add'; id: string; title: string; date: ISODate; start: string; minutes?: number; notes?: string }

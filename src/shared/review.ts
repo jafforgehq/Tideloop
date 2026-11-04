@@ -28,11 +28,12 @@ export function monthRange(year: number, month: number): [ISODate, ISODate] {
   return [days[0].date, days.at(-1)!.date]
 }
 
-/** Where the time went between two dates, both included. A todo counts on the day it is planned for. */
+/** Where the time went between two dates, both included. A finished todo counts on the day it was ticked off, an open one on the day it is planned for. */
 export function review(data: PlannerData, from: ISODate, to: ISODate): Review {
   const inRange = (date: ISODate | null): date is ISODate => date !== null && date >= from && date <= to
-  const todos = data.todos.filter((t) => inRange(t.date))
-  const finished = todos.filter((t) => t.done)
+  // Todos finished before the finish day was recorded have none, so their planned day stands in.
+  const finished = data.todos.filter((t) => t.done && inRange(t.doneAt ?? t.date))
+  const todos = [...finished, ...data.todos.filter((t) => !t.done && inRange(t.date))]
   const sum = (items: { minutes: number }[]) => items.reduce((total, x) => total + x.minutes, 0)
   const rows = data.lists
     .map((list): ReviewRow => {

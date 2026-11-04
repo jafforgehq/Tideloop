@@ -79,3 +79,14 @@ describe('loadData', () => {
   })
 
 })
+
+describe('a file from before doneAt', () => {
+  it('loads without a notice and keeps every todo', () => {
+    const old = { version: 1, lists: [{ id: 'work', name: 'Work', color: 0 }], events: [], settings: {}, todos: [{ id: 'a', title: 'A', listId: 'work', date: '2026-11-02', done: true, minutes: 30, order: 0, notes: '' }] }
+    writeFileSync(file(), JSON.stringify(old))
+    const { data, notice } = loadData(dir)
+    expect(notice).toBeNull()
+    expect(data.todos).toEqual([{ ...old.todos[0], doneAt: null }])
+    expect(readdirSync(dir)).toEqual(['planner.json'])
+  })
+})

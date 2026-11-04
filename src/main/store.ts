@@ -1,3 +1,4 @@
+import { todayISO } from '../shared/dates'
 import { reduce } from '../shared/planner'
 import type { Action, PlannerData } from '../shared/types'
 
@@ -6,13 +7,15 @@ const HISTORY_LIMIT = 100
 export interface StoreOptions {
   data: PlannerData
   save: (data: PlannerData) => void
+  /** Today's date. Defaults to the system clock. */
+  today?: () => string
   onSaveError?: (error: Error) => void
 }
 
 export type Store = ReturnType<typeof createStore>
 
 /** The one owner of planner state. The window and MCP clients both change it through here. */
-export function createStore({ data, save, onSaveError }: StoreOptions) {
+export function createStore({ data, save, onSaveError, today = todayISO }: StoreOptions) {
   let state = data
   const past: PlannerData[] = []
   const future: PlannerData[] = []
@@ -36,7 +39,9 @@ export function createStore({ data, save, onSaveError }: StoreOptions) {
       return () => void subscribers.delete(fn)
     },
     dispatch(action: Action) {
-      const next = reduce(state, action)
+      // Ticking a todo records the day, and the clock lives here so the window and MCP clients get it alike.
+      const stamped = (action.type === 'todo/toggle' || action.type === 'todo/update') && action.today === undefined ? { ...action, today: today() } : action
+      const next = reduce(state, stamped)
       if (next === state) return
       if (action.type !== 'settings/update') {
         past.push(state)
