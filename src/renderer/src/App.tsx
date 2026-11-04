@@ -3,6 +3,7 @@ import { addDays, monthName, startOfWeek, todayISO, weekTitle } from '../../shar
 import type { AppInfo, MenuCommand } from '../../shared/ipc'
 import { reduce } from '../../shared/planner'
 import { resolveTheme, type Theme } from '../../shared/themes'
+import { review as buildReview, monthRange, reviewFinding } from '../../shared/review'
 import { monthFinding, overdueCount, weekFinding } from '../../shared/tide'
 import { advanceTutorial, nextTutorialStep, startTutorial, type TutorialState } from '../../shared/tutorial'
 import type { Action, PlannerData, UpdateStatus } from '../../shared/types'
@@ -11,6 +12,7 @@ import { Dock } from './Dock'
 import { Editor } from './Editor'
 import { Chevron } from './icons'
 import { Month } from './Month'
+import { Review } from './Review'
 import { Settings } from './Settings'
 import { Tutorial } from './Tutorial'
 import { Week } from './Week'
@@ -36,7 +38,8 @@ export function App() {
   const [info, setInfo] = useState<AppInfo | null>(null)
   const [update, setUpdate] = useState<UpdateStatus>({ state: 'idle' })
   const [today, setToday] = useState(todayISO())
-  const [view, setView] = useState<'week' | 'month'>('week')
+  const [view, setView] = useState<'week' | 'month' | 'review'>('week')
+  const [reviewSpan, setReviewSpan] = useState<'week' | 'month'>('week')
   const [anchor, setAnchor] = useState(todayISO())
   const [editing, setEditing] = useState<EditTarget | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -89,7 +92,7 @@ export function App() {
   }, [loaded])
 
   useEffect(() => {
-    if (data) setTutorial((current) => current && advanceTutorial(current, data, view))
+    if (data) setTutorial((current) => current && advanceTutorial(current, data, view === 'month' ? 'month' : 'week'))
   }, [data, view])
 
   // These steps point at things only the week view shows.
@@ -134,14 +137,15 @@ export function App() {
     if (nextView) setView(nextView)
   }, [])
 
+  const span = view === 'review' ? reviewSpan : view
   const step = useCallback((by: number) => {
     setAnchor((current) => {
-      if (view === 'week') return addDays(current, by * 7)
+      if (span === 'week') return addDays(current, by * 7)
       const y = Number(current.slice(0, 4))
       const m = Number(current.slice(5, 7)) - 1 + by
       return `${y + Math.floor(m / 12)}-${String(((m + 12) % 12) + 1).padStart(2, '0')}-01`
     })
-  }, [view])
+  }, [span])
 
   useEffect(() => {
     const undo = () => {
@@ -169,7 +173,8 @@ export function App() {
       previous: () => step(-1),
       next: () => step(1),
       'view-week': () => setView('week'),
-      'view-month': () => setView('month')
+      'view-month': () => setView('month'),
+      'view-review': () => setView('review')
     }
     window.addEventListener('keydown', onKey)
     const off = api.onMenu((command) => commands[command]())
@@ -202,6 +207,7 @@ export function App() {
   const year = Number(anchor.slice(0, 4))
   const month = Number(anchor.slice(5, 7))
   const overdue = overdueCount(data, today)
+  const [from, to] = span === 'week' ? [monday, addDays(monday, 6)] : monthRange(year, month)
 
   return (
     <Context.Provider value={context}>
@@ -210,8 +216,8 @@ export function App() {
         <main className="main">
           <header className="main-head">
             <div className="titles">
-              <h1>{view === 'week' ? weekTitle(monday) : `${monthName(month)} ${year}`}</h1>
-              <p>{view === 'week' ? weekFinding(data, monday) : monthFinding(data, year, month)}</p>
+              <h1>{span === 'week' ? weekTitle(monday) : `${monthName(month)} ${year}`}</h1>
+              <p>{view === 'review' ? reviewFinding(buildReview(data, from, to)) : view === 'week' ? weekFinding(data, monday) : monthFinding(data, year, month)}</p>
             </div>
             {overdue > 0 && (
               <button className="btn accent" onClick={() => void dispatch({ type: 'todo/rollover', today })}>
@@ -221,14 +227,21 @@ export function App() {
             <div className="segmented" role="group" aria-label="View">
               <button aria-pressed={view === 'week'} onClick={() => setView('week')}>Week</button>
               <button aria-pressed={view === 'month'} data-tour="month" onClick={() => setView('month')}>Month</button>
+              <button aria-pressed={view === 'review'} onClick={() => setView('review')}>Review</button>
             </div>
+            {view === 'review' && (
+              <div className="segmented" role="group" aria-label="Period">
+                <button aria-pressed={reviewSpan === 'week'} onClick={() => setReviewSpan('week')}>Weekly</button>
+                <button aria-pressed={reviewSpan === 'month'} onClick={() => setReviewSpan('month')}>Monthly</button>
+              </div>
+            )}
             <div className="nav-buttons">
-              <button className="btn square" aria-label={view === 'week' ? 'Previous week' : 'Previous month'} onClick={() => step(-1)}><Chevron left /></button>
+              <button className="btn square" aria-label={span === 'week' ? 'Previous week' : 'Previous month'} onClick={() => step(-1)}><Chevron left /></button>
               <button className="btn" onClick={() => goTo(todayISO())}>Today</button>
-              <button className="btn square" aria-label={view === 'week' ? 'Next week' : 'Next month'} onClick={() => step(1)}><Chevron /></button>
+              <button className="btn square" aria-label={span === 'week' ? 'Next week' : 'Next month'} onClick={() => step(1)}><Chevron /></button>
             </div>
           </header>
-          {view === 'week' ? <Week monday={monday} /> : <Month year={year} month={month} />}
+          {view === 'review' ? <Review from={from} to={to} span={reviewSpan} /> : view === 'week' ? <Week monday={monday} /> : <Month year={year} month={month} />}
         </main>
       </div>
       {editing && <Editor key={JSON.stringify(editing)} target={editing} onClose={() => setEditing(null)} />}

@@ -39,6 +39,7 @@ export function buildMenu(send: (command: MenuCommand) => void, checkForUpdates:
       submenu: [
         item('Week', 'view-week', 'CmdOrCtrl+1'),
         item('Month', 'view-month', 'CmdOrCtrl+2'),
+        item('Review', 'view-review', 'CmdOrCtrl+3'),
         { type: 'separator' },
         item('Today', 'today', 'CmdOrCtrl+T'),
         item('Previous', 'previous', 'CmdOrCtrl+['),

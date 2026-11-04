@@ -1,7 +1,7 @@
 {
   "name": "tideloop",
   "productName": "Tideloop",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A week planner for macOS with a tide chart that shows how full each day is",
   "license": "MIT",
   "homepage": "https://jafforgehq.github.io/tideloop-app/",

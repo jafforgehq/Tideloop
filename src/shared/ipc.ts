@@ -6,7 +6,7 @@ export interface AppInfo {
   dataFile: string
 }
 
-export type MenuCommand = 'undo' | 'redo' | 'new-todo' | 'new-event' | 'settings' | 'today' | 'previous' | 'next' | 'view-week' | 'view-month'
+export type MenuCommand = 'undo' | 'redo' | 'new-todo' | 'new-event' | 'settings' | 'today' | 'previous' | 'next' | 'view-week' | 'view-month' | 'view-review'
 
 /** Everything the window may ask of the main process. Exposed as `window.tideloop`. */
 export interface TideloopApi {
